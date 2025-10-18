@@ -66,7 +66,7 @@ T_DATA vlen(vector v) {
 }
 
 void vnorm(vector target) {
-    T_DATA len = vlen(other);
+    T_DATA len = vlen(target);
     vscale(target, 1. / len);
 }
 
