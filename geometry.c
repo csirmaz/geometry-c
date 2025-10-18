@@ -19,53 +19,61 @@ typedef struct {
     char z;
 } boolvec;
 
-void vzero(vector target) {
-    target.x = 0.;
-    target.y = 0.;
-    target.z = 0.;
+void vprint(vector* v) {
+    printf("x=%lf y=%lf z=%lf\n", v->x, v->y, v->z);
 }
 
-void bvzero(boolvec target) {
-    target.x = 0;
-    target.y = 0;
-    target.z = 0;
+void vzero(vector* target) {
+    target->x = 0.;
+    target->y = 0.;
+    target->z = 0.;
 }
 
-void vcopy(vector target, vector other) {
-    target.x = other.x;
-    target.y = other.y;
-    target.z = other.z;
+void bvzero(boolvec* target) {
+    target->x = 0;
+    target->y = 0;
+    target->z = 0;
 }
 
-void bvcopy(boolvec target, boolvec other) {
-    target.x = other.x;
-    target.y = other.y;
-    target.z = other.z;
+void vcopy(vector* target, vector* other) {
+    target->x = other->x;
+    target->y = other->y;
+    target->z = other->z;
 }
 
-void vscale(vector target, T_DATA s) {
-    target.x *= s;
-    target.y *= s;
-    target.z *= s;
+void bvcopy(boolvec* target, boolvec* other) {
+    target->x = other->x;
+    target->y = other->y;
+    target->z = other->z;
 }
 
-void vadd(vector target, vector other) {
-    target.x += other.x;
-    target.y += other.y;
-    target.z += other.z;
+int veq(vector* a, vector* b) {
+    return (a->x == b->x && a->y == b->y && a->z == b->z);
 }
 
-void vsub(vector target, vector other) {
-    target.x -= other.x;
-    target.y -= other.y;
-    target.z -= other.z;
+void vscale(vector* target, T_DATA s) {
+    target->x *= s;
+    target->y *= s;
+    target->z *= s;
 }
 
-T_DATA vlen(vector v) {
-    return sqrt(v.x*v.x + v.y*v.y + v.z*v.z);
+void vadd(vector* target, vector* other) {
+    target->x += other->x;
+    target->y += other->y;
+    target->z += other->z;
 }
 
-void vnorm(vector target) {
+void vsub(vector* target, vector* other) {
+    target->x -= other->x;
+    target->y -= other->y;
+    target->z -= other->z;
+}
+
+T_DATA vlen(vector* v) {
+    return sqrt(v->x*v->x + v->y*v->y + v->z*v->z);
+}
+
+void vnorm(vector* target) {
     T_DATA len = vlen(target);
     vscale(target, 1. / len);
 }
@@ -101,3 +109,57 @@ boolvec*** alloc_3d_boolvec_array(int sizex, int sizey, int sizez) {
     return arr;
 }
 
+char*** alloc_3d_bool_array(int sizex, int sizey, int sizez) {
+    int j, k;
+    char*** arr = (char***)malloc(sizez * sizeof(char**));
+    if(arr == NULL) { return NULL; }
+    for (k = 0; k < sizez; k++) {
+        arr[k] = (char**)malloc(sizey * sizeof(char*));
+        if(arr[k] == NULL) { return NULL; }
+        for (j = 0; j < sizey; j++) {
+            arr[k][j] = (char*)malloc(sizex * sizeof(char));
+            if(arr[k][j] == NULL) { return NULL; }
+        }
+    }
+    return arr;
+}
+
+
+int test_no = 0;
+
+void assert(int b) {
+    test_no++;
+    if(!b) { printf("Test %d failed\n", test_no); exit(1); }
+}
+
+void geometry_test(void) {
+    vector vx, vy, vz;
+    vzero(&vx);
+    vzero(&vy);
+    vzero(&vz);
+    assert(veq(&vx, &vy)); // #1
+
+    vx.x = 1.; // vx=(1,0,0)
+    assert(!veq(&vx, &vy)); // #2
+    assert(vlen(&vx) == 1.); // #3
+    assert(vlen(&vy) == 0.); // #4
+
+    vy.x = 1.; // vy=(1,0,0)
+    assert(veq(&vx, &vy)); // #5
+
+    vz.x = 2.; // vz=(2,0,0)
+    vadd(&vx, &vy); // vx=(2,0,0)
+    assert(veq(&vx, &vz)); // #6
+    vscale(&vz, .5); // vz=(1,0,0)
+    assert(veq(&vz, &vy)); // #7
+    vsub(&vx, &vy); // vx=(1,0,0)
+    assert(vlen(&vx) == 1.); // #8
+    
+    vx.y = 1.; // vx=(1,1,0)
+    vcopy(&vz, &vx); // vz=(1,1,0)
+    assert(vz.y == 1.); // #9
+    assert(vlen(&vz) > 1.4); // #10
+    assert(vlen(&vz) < 1.5); // #11
+    vnorm(&vz);
+    assert(fabs(vlen(&vz) - 1.) < .00001); // #12
+}
