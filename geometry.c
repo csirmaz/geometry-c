@@ -1,11 +1,13 @@
 
-/* Simple memory-efficient vector functions */
+/* Simple memory-efficient vector functions and STL export helpers */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 
 #define T_DATA double
+#define _ABS(x) fabs(x)
+#define EPSILON 1e-7
 
 typedef struct {
     T_DATA x;
@@ -51,6 +53,10 @@ int veq(vector* a, vector* b) {
     return (a->x == b->x && a->y == b->y && a->z == b->z);
 }
 
+int vapprox_zero(vector* v) {
+    return (_ABS(v->x) < EPSILON && _ABS(v->y) < EPSILON && _ABS(v->z) < EPSILON);
+}
+
 void vscale(vector* target, T_DATA s) {
     target->x *= s;
     target->y *= s;
@@ -78,6 +84,11 @@ void vnorm(vector* target) {
     vscale(target, 1. / len);
 }
 
+void vcross(vector* result, vector* a, vector* b) {
+    result->x = a->y * b->z - a->z * b->y;
+    result->y = a->z * b->x - a->x * b->z;
+    result->z = a->x * b->y - a->y * b->x;
+}
 
 vector*** alloc_3d_vector_array(int sizex, int sizey, int sizez) {
     int j, k;
@@ -124,6 +135,67 @@ char*** alloc_3d_bool_array(int sizex, int sizey, int sizez) {
     return arr;
 }
 
+FILE* open_stl(char* filename) {
+    FILE* fptr;
+    
+    fptr = fopen(filename, "w");
+    if(fptr == NULL) {
+        printf("Cannot open file %s\n", filename);
+        return NULL;
+    }
+    fprintf(fptr, "solid geomc\n");
+    return fptr;
+}
+
+void stl_write_vector(FILE* fptr, vector* v) {
+    fprintf(fptr, "%lf %lf %lf", v->x, v->y, v->z);
+}
+
+void stl_write_triangle(FILE* fptr, vector* p1, vector* p2, vector* p3) {
+    vector p21, p31, norm;
+    
+    vcopy(&p21, p2);
+    vsub(&p21, p1);
+    vcopy(&p31, p3);
+    vsub(&p31, p1);
+    vcross(&norm, &p21, &p31);
+    if(vapprox_zero(&norm)) {
+        // degenerate triange
+        return;
+    }
+    vnorm(&norm);
+    fprintf(fptr, "facet normal "); stl_write_vector(fptr, &norm);
+    fprintf(fptr, "\nouter loop");
+    fprintf(fptr, "\nvertex "); stl_write_vector(fptr, p1);
+    fprintf(fptr, "\nvertex "); stl_write_vector(fptr, p2);
+    fprintf(fptr, "\nvertex "); stl_write_vector(fptr, p3);
+    fprintf(fptr, "\nendloop\nendfacet\n");    
+}
+
+void stl_write_tetragon(FILE* fptr, vector* p1, vector* p2, vector* p3, vector* p4) {
+    vector d1, d2;
+    
+    // Decide which diagonal is best to break on
+    vcopy(&d1, p1);
+    vsub(&d1, p3);
+    vcopy(&d2, p2);
+    vsub(&d2, p4);
+    if(vlen(&d1) < vlen(&d2)) {
+        stl_write_triangle(fptr, p1, p2, p3);
+        stl_write_triangle(fptr, p1, p3, p4);
+    }
+    else {
+        stl_write_triangle(fptr, p1, p2, p4);
+        stl_write_triangle(fptr, p2, p3, p4);
+    }
+}
+
+void close_stl(FILE* fptr) {
+    fprintf(fptr, "endsolid geomc\n");
+    fclose(fptr);
+}
+
+// Unit tests
 
 int test_no = 0;
 
@@ -161,5 +233,5 @@ void geometry_test(void) {
     assert(vlen(&vz) > 1.4); // #10
     assert(vlen(&vz) < 1.5); // #11
     vnorm(&vz);
-    assert(fabs(vlen(&vz) - 1.) < .00001); // #12
+    assert(_ABS(vlen(&vz) - 1.) < EPSILON); // #12
 }
