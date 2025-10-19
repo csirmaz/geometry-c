@@ -135,7 +135,7 @@ char*** alloc_3d_bool_array(int sizex, int sizey, int sizez) {
     return arr;
 }
 
-FILE* open_stl(char* filename) {
+FILE* stl_open(char* filename) {
     FILE* fptr;
     
     fptr = fopen(filename, "w");
@@ -190,7 +190,7 @@ void stl_write_tetragon(FILE* fptr, vector* p1, vector* p2, vector* p3, vector* 
     }
 }
 
-void close_stl(FILE* fptr) {
+void stl_close(FILE* fptr) {
     fprintf(fptr, "endsolid geomc\n");
     fclose(fptr);
 }
