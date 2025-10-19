@@ -234,4 +234,23 @@ void geometry_test(void) {
     assert(vlen(&vz) < 1.5); // #11
     vnorm(&vz);
     assert(_ABS(vlen(&vz) - 1.) < EPSILON); // #12
+    
+    // Sample STL export (cube)
+    vector v000, v001, v011, v010, v100, v101, v111, v110; // vzyx
+    v000.x = 0.; v000.y = 0.; v000.z = 0.;
+    v001.x = 1.; v001.y = 0.; v001.z = 0.;
+    v011.x = 1.; v011.y = 1.; v011.z = 0.;
+    v010.x = 0.; v010.y = 1.; v010.z = 0.;
+    v100.x = 0.; v100.y = 0.; v100.z = 1.;
+    v101.x = 1.; v101.y = 0.; v101.z = 1.;
+    v111.x = 1.; v111.y = 1.; v111.z = 1.;
+    v110.x = 0.; v110.y = 1.; v110.z = 1.;
+    FILE* fptr = stl_open("test.stl");
+    stl_write_tetragon(fptr, &v000, &v001, &v011, &v010); // z=0
+    stl_write_tetragon(fptr, &v100, &v110, &v111, &v101); // z=1
+    stl_write_tetragon(fptr, &v000, &v010, &v110, &v100); // x=0
+    stl_write_tetragon(fptr, &v001, &v101, &v111, &v011); // x=1
+    stl_write_tetragon(fptr, &v000, &v100, &v101, &v001); // y=0
+    stl_write_tetragon(fptr, &v010, &v011, &v111, &v110); // y=1
+    stl_close(fptr);
 }
